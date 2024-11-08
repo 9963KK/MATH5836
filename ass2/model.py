@@ -56,10 +56,15 @@ plt.savefig('abalone_pie.png')
 kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 
-def simple_nn_train(model, X=X, y=y, iter=30):
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+
+def simple_nn_train(model, X=X, y=y, only=None, iter=30):
     ovo = []
     ovr = []
     for stra in ['ovo', 'ovr']:
+        if only and stra not in only:
+            continue
         f1_socre_list = []
         roc_auc_score_list = []
         for i in range(1, iter + 1):
@@ -77,9 +82,9 @@ def simple_nn_train(model, X=X, y=y, iter=30):
                 roc_auc_res.append(roc_auc)
             f1_res_mean = np.mean(f1_res)
             roc_auc_res_mean = np.mean(roc_auc_res)
-            # if i % (iter / 10) == 0:
-            #     print(
-            #         f'Iteration {i}/ {iter}: Using Stragety {stra} f1_score={f1_res_mean:.3f}; roc_auc={roc_auc_res_mean:.3f}')
+            if i % (iter / 10) == 0:
+                print(
+                    f'Iteration {i}/ {iter}: Using Stragety {stra} f1_score={f1_res_mean:.3f}; roc_auc={roc_auc_res_mean:.3f}')
             f1_socre_list.append(f1_res_mean)
             roc_auc_score_list.append(roc_auc_res_mean)
         print(
@@ -94,18 +99,17 @@ def simple_nn_train(model, X=X, y=y, iter=30):
 
 
 iters = 100
-print('Default Configuration')
+print('Using solver=sgd')
 default_ovo, default_ovr = simple_nn_train(MLPClassifier(
-    warm_start=True, early_stopping=True), iter=iters)
+    warm_start=True, solver='sgd', early_stopping=True), iter=iters)
 print('Using solver=adam')
 adam_ovo, adam_ovr = simple_nn_train(MLPClassifier(
     solver='adam', warm_start=True, early_stopping=True), iter=iters)
-
 # 绘制收敛速度的曲线
 # 封装绘制图片的函数
 
 
-def plot_scores(tag='Default', iters=iters, data=None, score='f1_score'):
+def plot_scores(tag='SGD', iters=iters, data=None, score='f1_score'):
     if score == 'f1_score':
         d = 0
     else:
@@ -114,16 +118,16 @@ def plot_scores(tag='Default', iters=iters, data=None, score='f1_score'):
 
 
 plt.figure(figsize=(8, 8))
-plot_scores(tag='Default', data=default_ovo, score='roc_auc')
+plot_scores(tag='SGD', data=default_ovo, score='roc_auc')
 plot_scores(tag='Adam', data=adam_ovo, score='roc_auc')
-plt.title(f'Default vs. Adam using ovo roc_auc (iterations={iters})')
+plt.title(f'SGD vs. Adam using ovo roc_auc (iterations={iters})')
 plt.legend()
 plt.savefig('abalone_ovo_roc_auc.png')
 
 plt.figure(figsize=(8, 8))
-plot_scores(tag='Default', data=default_ovo, score='f1_score')
+plot_scores(tag='SGD', data=default_ovo, score='f1_score')
 plot_scores(tag='Adam', data=adam_ovo, score='f1_score')
-plt.title(f'Default vs. Adam using ovo f1_score (iterations={iters})')
+plt.title(f'SGD vs. Adam using ovo f1_score (iterations={iters})')
 plt.xlabel('Iterations')
 plt.ylabel('Scores')
 plt.legend()
@@ -263,7 +267,7 @@ print('-' * 100)
 # fetch dataset
 
 # data (as pandas dataframes)
-data_B = pd.read_csv('../cmc/contraceptive_method_choice.data', sep=',', header=None, names=[
+data_B = pd.read_csv('../cmc/cmc.data', sep=',', header=None, names=[
     'wife_age', 'wife_education', 'husband_education', 'num_children', 'wife_religion', 'wife_work', 'husband_occupation', 'standard_living', 'media_exposure', 'contraceptive_method'])
 X_B = data_B.iloc[:, :-1]
 y_B = data_B.iloc[:, -1]
@@ -287,5 +291,5 @@ plt.pie(y_B.value_counts(), autopct='%.2f%%', startangle=90, labels=[
         i for i in y_B.value_counts().index], colors=B_colors)
 plt.title('Pie chart')
 plt.savefig('contraceptive_method_choice_pie.png')
-B_ovo, B_ovr = simple_nn_train(MLPClassifier(
-    solver='adam', warm_start=True, early_stopping=True), X=X_B, y=y_B, iter=100)
+B_ovo, B_ovr = simple_nn_train(MLPClassifier(solver='adam', warm_start=True, early_stopping=True, learning_rate='adaptive',
+                               learning_rate_init=0.001, hidden_layer_sizes=(256, 256)), X=X_B, y=y_B, iter=150, only=['ovr'])
