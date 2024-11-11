@@ -28,7 +28,7 @@ random.seed(42)
 torch.manual_seed(42)
 # Neural Network part
 print('-' * 50, 'Part A', '-' * 50)
-path = './abalone.data'
+path = './data/abalone.data'
 df = pd.read_csv(path, names=['sex', 'length', 'diameter', 'height',
                  'whole_weight', 'shucked_weight', 'viscera_weight', 'shell_weight', 'rings'])
 # 创建img文件夹
@@ -597,7 +597,7 @@ print('-' * 50, 'Part B', '-' * 50)
 # choose model
 print('After comparison, We choose RandomForestClassifier and MLPClassifier with Adam solver as the best models')
 # data (as pandas dataframes)
-data_B = pd.read_csv('./cmc.data', sep=',', header=None, names=[
+data_B = pd.read_csv('./data/cmc.data', sep=',', header=None, names=[
     'wife_age', 'wife_education', 'husband_education', 'num_children', 'wife_religion', 'wife_work', 'husband_occupation', 'standard_living', 'media_exposure', 'contraceptive_method'])
 X_B = data_B.iloc[:, :-1]
 y_B = data_B.iloc[:, -1]
@@ -679,7 +679,7 @@ B_ovo, B_ovr = simple_nn_train(MLPClassifier(solver='adam', warm_start=True, ear
 print('-' * 50, 'Part C', '', '-' * 50)
 
 # 加载数据集
-file_path = 'processed.cleveland.data'  # Heart Disease 数据集路径
+file_path = './data/processed.cleveland.data'  # Heart Disease 数据集路径
 
 # 添加列名
 column_names = [
