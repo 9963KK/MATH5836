@@ -1,4 +1,4 @@
-# Import lib
+# Import libraries
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -26,15 +26,20 @@ warnings.filterwarnings("ignore")
 np.random.seed(42)
 random.seed(42)
 torch.manual_seed(42)
+
 # Neural Network part
 print('-' * 50, 'Part A', '-' * 50)
 path = './data/abalone.data'
 df = pd.read_csv(path, names=['sex', 'length', 'diameter', 'height',
                  'whole_weight', 'shucked_weight', 'viscera_weight', 'shell_weight', 'rings'])
-# 创建img文件夹
+
+# Create img folder
 if not os.path.exists('img'):
     os.mkdir('img')
-# Use the recommend multiclass classifier
+
+# Define the recommended multiclass classifier
+
+
 def multi_class(x):
     if x <= 7:
         return 0
@@ -47,10 +52,10 @@ def multi_class(x):
 
 
 class_dict = {0: '0~7', 1: '8~10', 2: '11~15', 3: '16~'}
-# Use different number to map the value of ring-age
+# Map the value of ring-age using different numbers
 y = df.iloc[:, -1].map(multi_class)
 X = df.iloc[:, :-1]
-# 对性别进行映射
+# Map the values for 'sex'
 X['sex'] = X['sex'].map({'M': 0, 'F': 1, 'I': 3})
 cmap = cm.get_cmap('Pastel1')
 abalone_colors = [cmap(i) for i in np.linspace(0, 1, len(y.value_counts()))]
@@ -61,36 +66,37 @@ plt.title('Pie chart')
 plt.savefig('img/abalone_pie.png')
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42)
-print( '#' * 20,'DecisionTree and RadomForest part', '#' * 20)
-# DecisionTree and RadomForest part
-# 定义不同的决策树深度
+print('#' * 20, 'DecisionTree and RandomForest part', '#' * 20)
+
+# DecisionTree and RandomForest part
+# Define different decision tree depths
 depths = [3, 5, 7, 9, 11]
 train_accuracies = []
 test_accuracies = []
 
-# 进行多次实验，使用不同的树深度
+# Conduct multiple experiments using different tree depths
 for depth in depths:
-    # 初始化决策树模型并设置最大深度
+    # Initialize the decision tree model and set max depth
     clf = DecisionTreeClassifier(max_depth=depth, random_state=42)
 
-    # 训练模型
+    # Train the model
     clf.fit(X_train, y_train)
 
-    # 计算训练集和测试集的准确率
+    # Calculate training and test accuracy
     train_accuracy = accuracy_score(y_train, clf.predict(X_train))
     test_accuracy = accuracy_score(y_test, clf.predict(X_test))
 
-    # 将结果添加到列表中
+    # Add results to list
     train_accuracies.append(train_accuracy)
     test_accuracies.append(test_accuracy)
 
-    # 打印每次实验的结果
+    # Print results for each experiment
     print(f"Max Depth: {depth}")
     print(f"Training Accuracy: {train_accuracy:.4f}")
     print(f"Testing Accuracy: {test_accuracy:.4f}")
     print("-" * 30)
 
-# 绘制不同树深度下的训练和测试准确率图
+# Plot training and testing accuracy at different tree depths
 plt.figure(figsize=(10, 6))
 plt.plot(depths, train_accuracies, label='Training Accuracy', marker='o')
 plt.plot(depths, test_accuracies, label='Testing Accuracy', marker='o')
@@ -101,27 +107,28 @@ plt.legend()
 plt.grid()
 plt.savefig('img/depth_accuracy.png')
 
-# 使用最佳参数的决策树进行预测
-best_clf = DecisionTreeClassifier(random_state=42, max_depth=5, max_features=None, min_samples_leaf=5, min_samples_split=20)
+# Use a decision tree with the best parameters for prediction
+best_clf = DecisionTreeClassifier(
+    random_state=42, max_depth=5, max_features=None, min_samples_leaf=5, min_samples_split=20)
 best_clf.fit(X_train, y_train)
 
-# 绘制决策树
+# Visualize the decision tree
 plt.figure(figsize=(20, 10))
-plot_tree(best_clf, filled=True, feature_names=X.columns,
+plot_tree(best_clf, filled=True, feature_names=list(X.columns),
           class_names=['0-7', '8-10', '11-15', '15+'])
 plt.title("Decision Tree Visualization (Max Depth = 5)")
 plt.savefig('img/decision_tree.png')
 
-# 将决策树转换为文本规则
+# Convert decision tree to text rules
 tree_rules = export_text(best_clf, feature_names=list(X.columns))
 print(tree_rules)
 
-# 获取不同的 alpha 值和对应的子树
+# Get different alpha values and corresponding subtrees
 path = best_clf.cost_complexity_pruning_path(X_train, y_train)
-ccp_alphas = path.ccp_alphas  # 不同的 alpha 值
-impurities = path.impurities  # 不同的 alpha 下的树的 impurity 值
+ccp_alphas = path.ccp_alphas  # Different alpha values
+impurities = path.impurities  # Impurity values for trees under different alphas
 
-# 可视化 alpha 与 impurity 之间的关系
+# Visualize the relationship between alpha and impurity
 plt.figure(figsize=(10, 6))
 plt.plot(ccp_alphas, impurities, marker='o', drawstyle="steps-post")
 plt.xlabel("Effective Alpha")
@@ -132,16 +139,16 @@ plt.savefig('img/alpha_impurity.png')
 
 train_scores = []
 test_scores = []
-# 遍历不同的 ccp_alpha 值，生成不同的剪枝模型
+# Generate different pruned models by iterating over ccp_alpha values
 for ccp_alpha in ccp_alphas:
     clf = DecisionTreeClassifier(random_state=42, ccp_alpha=ccp_alpha)
     clf.fit(X_train, y_train)
 
-    # 计算训练和测试集的准确率
+    # Calculate training and testing accuracy
     train_scores.append(clf.score(X_train, y_train))
     test_scores.append(clf.score(X_test, y_test))
 
-# 可视化训练和测试集的准确率随 ccp_alpha 的变化
+# Visualize accuracy vs. ccp_alpha for training and testing sets
 plt.figure(figsize=(10, 6))
 plt.plot(ccp_alphas, train_scores, marker='o',
          label="Train Accuracy", drawstyle="steps-post")
@@ -153,68 +160,192 @@ plt.title("Accuracy vs Effective Alpha for Pruned Tree")
 plt.legend()
 plt.grid()
 plt.savefig('img/alpha_accuracy.png')
-# 选择测试集准确率最高的 ccp_alpha 值
+# Select ccp_alpha with highest test set accuracy
 best_alpha = ccp_alphas[test_scores.index(max(test_scores))]
 print("Best alpha:", best_alpha)
 
-# 使用最佳 alpha 值重新训练剪枝后的决策树
+# Retrain pruned decision tree with best alpha
 pruned_clf = DecisionTreeClassifier(random_state=42, ccp_alpha=best_alpha)
 pruned_clf.fit(X_train, y_train)
 
-# 在测试集上评估剪枝后的模型
+# Evaluate pruned model on test set
 pruned_test_accuracy = pruned_clf.score(X_test, y_test)
 print("Test Accuracy of Pruned Tree:", pruned_test_accuracy)
 
-# 使用修剪后的模型进行预测
-y_pred_pruned = pruned_clf.predict(X_test)              # 预测标签
-y_prob_pruned = pruned_clf.predict_proba(X_test)        # 预测概率，用于计算 ROC-AUC
+# Predict with pruned model
+y_pred_pruned = pruned_clf.predict(X_test)              # Predicted labels
+# Predicted probabilities for ROC-AUC calculation
+y_prob_pruned = pruned_clf.predict_proba(X_test)
 
-# 计算 F1 分数
-# 可以选择 'macro' 或 'weighted'
+# Calculate F1 score
 f1_pruned = f1_score(y_test, y_pred_pruned, average='weighted')
 print(f"F1 Score of Pruned Tree: {f1_pruned:.4f}")
 
-# 计算 ROC-AUC
-# 如果是二分类
+# Calculate ROC-AUC
 if len(set(y_test)) == 2:
-    roc_auc_pruned = roc_auc_score(y_test, y_prob_pruned[:, 1])  # 假设第二列为正类的概率
+    # Assuming second column is positive class probability
+    roc_auc_pruned = roc_auc_score(y_test, y_prob_pruned[:, 1])
     print(f"ROC-AUC of Pruned Tree: {roc_auc_pruned:.4f}")
-# 如果是多分类
 else:
-    # 先将 y_test 二值化
     y_test_binarized = label_binarize(y_test, classes=list(set(y_test)))
     roc_auc_multi_pruned = roc_auc_score(
         y_test_binarized, y_prob_pruned, average='macro', multi_class='ovr')
     print(f"ROC-AUC (Multi-class) of Pruned Tree: {roc_auc_multi_pruned:.4f}")
 
-# 定义不同的树数量
+# Define different numbers of trees
 n_estimators_list = [10, 50, 100, 200, 300]
 train_accuracies = []
 test_accuracies = []
 
-# 遍历不同的树数量，训练随机森林模型
+# Train random forest model with different tree numbers
 for n_estimators in n_estimators_list:
-    # 初始化随机森林模型并设置树的数量
     rf_clf = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
 
-    # 训练模型
+    # Train model
     rf_clf.fit(X_train, y_train)
 
-    # 计算训练集和测试集的准确率
+    # Calculate training and test accuracy
     train_accuracy = rf_clf.score(X_train, y_train)
     test_accuracy = rf_clf.score(X_test, y_test)
 
-    # 将结果添加到列表中
+    # Add results to lists
     train_accuracies.append(train_accuracy)
     test_accuracies.append(test_accuracy)
 
-    # 输出每次实验的结果
+    # Output results for each experiment
     print(f"Number of Trees: {n_estimators}")
     print(f"Training Accuracy: {train_accuracy:.4f}")
     print(f"Testing Accuracy: {test_accuracy:.4f}")
     print("-" * 30)
 
-# 可视化不同树数量下的训练和测试准确率
+# Plot training and testing accuracy at different tree depths
+plt.figure(figsize=(10, 6))
+plt.plot(depths, train_accuracies, label='Training Accuracy', marker='o')
+plt.plot(depths, test_accuracies, label='Testing Accuracy', marker='o')
+plt.xlabel('Tree Depth')
+plt.ylabel('Accuracy')
+plt.title('Decision Tree Depth vs Accuracy')
+plt.legend()
+plt.grid()
+plt.savefig('img/depth_accuracy.png')
+
+# Use a decision tree with the best parameters for prediction
+best_clf = DecisionTreeClassifier(
+    random_state=42, max_depth=5, max_features=None, min_samples_leaf=5, min_samples_split=20)
+best_clf.fit(X_train, y_train)
+
+# Visualize the decision tree
+plt.figure(figsize=(20, 10))
+plot_tree(best_clf, filled=True, feature_names=list(X.columns),
+          class_names=['0-7', '8-10', '11-15', '15+'])
+plt.title("Decision Tree Visualization (Max Depth = 5)")
+plt.savefig('img/decision_tree.png')
+
+# Convert the decision tree to text rules
+tree_rules = export_text(best_clf, feature_names=list(X.columns))
+print(tree_rules)
+
+# Get different alpha values and corresponding subtrees
+path = best_clf.cost_complexity_pruning_path(X_train, y_train)
+ccp_alphas = path.ccp_alphas  # Different alpha values
+impurities = path.impurities  # Impurity values for trees under different alphas
+
+# Visualize the relationship between alpha and impurity
+plt.figure(figsize=(10, 6))
+plt.plot(ccp_alphas, impurities, marker='o', drawstyle="steps-post")
+plt.xlabel("Effective Alpha")
+plt.ylabel("Total Impurity of Leaves")
+plt.title("Total Impurity vs Effective Alpha for Training Set")
+plt.grid()
+plt.savefig('img/alpha_impurity.png')
+
+train_scores = []
+test_scores = []
+# Iterate over different ccp_alpha values to generate different pruned models
+for ccp_alpha in ccp_alphas:
+    clf = DecisionTreeClassifier(random_state=42, ccp_alpha=ccp_alpha)
+    clf.fit(X_train, y_train)
+
+    # Calculate training and test accuracy
+    train_scores.append(clf.score(X_train, y_train))
+    test_scores.append(clf.score(X_test, y_test))
+
+# Visualize training and testing accuracy as ccp_alpha varies
+plt.figure(figsize=(10, 6))
+plt.plot(ccp_alphas, train_scores, marker='o',
+         label="Train Accuracy", drawstyle="steps-post")
+plt.plot(ccp_alphas, test_scores, marker='o',
+         label="Test Accuracy", drawstyle="steps-post")
+plt.xlabel("Effective Alpha")
+plt.ylabel("Accuracy")
+plt.title("Accuracy vs Effective Alpha for Pruned Tree")
+plt.legend()
+plt.grid()
+plt.savefig('img/alpha_accuracy.png')
+
+# Select the ccp_alpha value with the highest test set accuracy
+best_alpha = ccp_alphas[test_scores.index(max(test_scores))]
+print("Best alpha:", best_alpha)
+
+# Retrain pruned decision tree with the best alpha
+pruned_clf = DecisionTreeClassifier(random_state=42, ccp_alpha=best_alpha)
+pruned_clf.fit(X_train, y_train)
+
+# Evaluate pruned model on test set
+pruned_test_accuracy = pruned_clf.score(X_test, y_test)
+print("Test Accuracy of Pruned Tree:", pruned_test_accuracy)
+
+# Predict with pruned model
+y_pred_pruned = pruned_clf.predict(X_test)              # Predicted labels
+# Predicted probabilities for ROC-AUC calculation
+y_prob_pruned = pruned_clf.predict_proba(X_test)
+
+# Calculate F1 score
+f1_pruned = f1_score(y_test, y_pred_pruned, average='weighted')
+print(f"F1 Score of Pruned Tree: {f1_pruned:.4f}")
+
+# Calculate ROC-AUC
+# If binary classification
+if len(set(y_test)) == 2:
+    # Assuming second column is positive class probability
+    roc_auc_pruned = roc_auc_score(y_test, y_prob_pruned[:, 1])
+    print(f"ROC-AUC of Pruned Tree: {roc_auc_pruned:.4f}")
+# If multiclass classification
+else:
+    # First binarize y_test
+    y_test_binarized = label_binarize(y_test, classes=list(set(y_test)))
+    roc_auc_multi_pruned = roc_auc_score(
+        y_test_binarized, y_prob_pruned, average='macro', multi_class='ovr')
+    print(f"ROC-AUC (Multi-class) of Pruned Tree: {roc_auc_multi_pruned:.4f}")
+
+# Define different numbers of trees
+n_estimators_list = [10, 50, 100, 200, 300]
+train_accuracies = []
+test_accuracies = []
+
+# Iterate over different tree numbers and train random forest model
+for n_estimators in n_estimators_list:
+    # Initialize random forest model and set tree number
+    rf_clf = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
+
+    # Train model
+    rf_clf.fit(X_train, y_train)
+
+    # Calculate training and test accuracy
+    train_accuracy = rf_clf.score(X_train, y_train)
+    test_accuracy = rf_clf.score(X_test, y_test)
+
+    # Add results to lists
+    train_accuracies.append(train_accuracy)
+    test_accuracies.append(test_accuracy)
+
+    # Output results for each experiment
+    print(f"Number of Trees: {n_estimators}")
+    print(f"Training Accuracy: {train_accuracy:.4f}")
+    print(f"Testing Accuracy: {test_accuracy:.4f}")
+    print("-" * 30)
+
+# Visualize training and testing accuracy at different tree numbers
 plt.figure(figsize=(10, 6))
 plt.plot(n_estimators_list, train_accuracies,
          label='Training Accuracy', marker='o')
@@ -227,7 +358,7 @@ plt.legend()
 plt.grid()
 plt.savefig('img/random_forest.png')
 
-# 限制树的深度减少过拟合
+# Limit tree depth to reduce overfitting
 rf_clf = RandomForestClassifier(
     n_estimators=100, max_depth=10, random_state=42)
 rf_clf.fit(X_train, y_train)
@@ -236,22 +367,24 @@ test_accuracy = rf_clf.score(X_test, y_test)
 print(f"Training Accuracy: {train_accuracy:.4f}")
 print(f"Testing Accuracy: {test_accuracy:.4f}")
 
-# 使用模型预测
-y_pred = rf_clf.predict(X_test)              # 预测标签
-y_prob = rf_clf.predict_proba(X_test)        # 预测概率，用于计算 ROC-AUC
+# Predict with model
+y_pred = rf_clf.predict(X_test)              # Predicted labels
+# Predicted probabilities for ROC-AUC calculation
+y_prob = rf_clf.predict_proba(X_test)
 
-# 计算 F1 分数
-f1 = f1_score(y_test, y_pred, average='weighted')  # 可以选择 'macro' 或 'weighted'
+# Calculate F1 score
+f1 = f1_score(y_test, y_pred, average='weighted')
 print(f"F1 Score: {f1:.4f}")
 
-# 计算 ROC-AUC
-# 如果是二分类
+# Calculate ROC-AUC
+# If binary classification
 if len(set(y_test)) == 2:
-    roc_auc = roc_auc_score(y_test, y_prob[:, 1])  # 假设第二列为正类的概率
+    # Assuming second column is positive class probability
+    roc_auc = roc_auc_score(y_test, y_prob[:, 1])
     print(f"ROC-AUC: {roc_auc:.4f}")
-# 如果是多分类
+# If multiclass classification
 else:
-    # 先将 y_test 二值化
+    # First binarize y_test
     y_test_binarized = label_binarize(y_test, classes=list(set(y_test)))
     roc_auc_multi = roc_auc_score(
         y_test_binarized, y_prob, average='macro', multi_class='ovr')
@@ -260,7 +393,7 @@ else:
 # XGBoost and GBDT part
 print('#' * 20, 'XGB and GBDT part', '#' * 20)
 
-# XGBoost 分类器 - 树数量 vs 准确率
+# XGBoost classifier - Tree number vs. accuracy
 train_accuracies_xgb = []
 test_accuracies_xgb = []
 num_boost_rounds = [10, 50, 100, 150, 200, 250, 300]
@@ -283,28 +416,29 @@ plt.title('XGBoost: Number of Boosting Rounds vs Accuracy')
 plt.legend()
 plt.savefig('img/abalone_xgb_accuracy.png')
 
-# 训练 XGBoost 分类器
+# Train XGBoost classifier
 xgb_model = XGBClassifier(use_label_encoder=False,
                           eval_metric='mlogloss', random_state=42)
 xgb_model.fit(X_train, y_train)
 
-# 预测并评估 XGBoost 模型
+# Predict and evaluate the XGBoost model
 y_pred_xgb = xgb_model.predict(X_test)
 accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
 f1_xgb = f1_score(y_test, y_pred_xgb, average='weighted')
-print(f"XGBoost - 准确率: {accuracy_xgb:.2f}, F1 分数: {f1_xgb:.2f}")
+print(f"XGBoost - Accuracy: {accuracy_xgb:.2f}, F1 Score: {f1_xgb:.2f}")
 
-# 训练梯度提升分类器
+# Train Gradient Boosting classifier
 gb_model = GradientBoostingClassifier(random_state=42)
 gb_model.fit(X_train, y_train)
 
-# 预测并评估梯度提升模型
+# Predict and evaluate the Gradient Boosting model
 y_pred_gb = gb_model.predict(X_test)
 accuracy_gb = accuracy_score(y_test, y_pred_gb)
 f1_gb = f1_score(y_test, y_pred_gb, average='weighted')
-print(f"梯度提升 - 准确率: {accuracy_gb:.2f}, F1 分数: {f1_gb:.2f}")
+print(
+    f"Gradient Boosting - Accuracy: {accuracy_gb:.2f}, F1 Score: {f1_gb:.2f}")
 
-# 训练梯度提升分类器并绘制树数量 vs 准确率曲线图
+# Train the Gradient Boosting classifier and plot the number of trees vs accuracy
 train_accuracies_gb = []
 test_accuracies_gb = []
 num_trees = [10, 50, 100, 150, 200, 250, 300]
@@ -324,19 +458,16 @@ plt.title('GBDT: Number of Trees vs Accuracy')
 plt.legend()
 plt.savefig('img/abalone_gb_accuracy.png')
 
-# 比较模型表现
-print("\n模型表现对比:")
-print(f"XGBoost - 准确率: {accuracy_xgb:.2f}, F1 分数: {f1_xgb:.2f}")
-print(f"梯度提升 - 准确率: {accuracy_gb:.2f}, F1 分数: {f1_gb:.2f}")
+# Compare model performance
+print("\nModel Performance Comparison:")
+print(f"XGBoost - Accuracy: {accuracy_xgb:.2f}, F1 Score: {f1_xgb:.2f}")
+print(
+    f"Gradient Boosting - Accuracy: {accuracy_gb:.2f}, F1 Score: {f1_gb:.2f}")
 
-
-# 由于数据是处理过的，不需要再去做额外的特征工程
-# 由于是多分类，我们可以使用One-to-one或者One-to-rest的方式
-# 同时引入K折交叉验证
-print('#' * 20, 'Neural Netwok part', '#' * 20)
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-
+# Since the data is already processed, no additional feature engineering is needed
+# Since it is multi-class, we can use One-vs-One or One-vs-Rest strategies
+# Also introduce K-Fold Cross-Validation
+print('#' * 20, 'Neural Network part', '#' * 20)
 kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 
@@ -346,7 +477,7 @@ def simple_nn_train(model, X=X, y=y, only=None, iter=30):
     for stra in ['ovo', 'ovr']:
         if only and stra not in only:
             continue
-        f1_socre_list = []
+        f1_score_list = []
         roc_auc_score_list = []
         for i in range(1, iter + 1):
             f1_res = []
@@ -364,17 +495,15 @@ def simple_nn_train(model, X=X, y=y, only=None, iter=30):
             f1_res_mean = np.mean(f1_res)
             roc_auc_res_mean = np.mean(roc_auc_res)
             if i % (iter / 10) == 0:
-                print(
-                    f'Iteration {i}/ {iter}: Using Stragety {stra} f1_score={f1_res_mean:.3f}; roc_auc={roc_auc_res_mean:.3f}')
-            f1_socre_list.append(f1_res_mean)
+                print(f'Iteration {i}/{iter}: Using Strategy {stra} f1_score={f1_res_mean:.3f}; roc_auc={roc_auc_res_mean:.3f}')
+            f1_score_list.append(f1_res_mean)
             roc_auc_score_list.append(roc_auc_res_mean)
-        print(
-            f'Final Summary: Iterations {iter}, Stragety {stra}, f1_score={f1_socre_list[-1]:.3f}, roc_auc={roc_auc_score_list[-1]:.3f}')
+        print(f'Final Summary: Iterations {iter}, Strategy {stra}, f1_score={f1_score_list[-1]:.3f}, roc_auc={roc_auc_score_list[-1]:.3f}')
         if stra == 'ovo':
-            ovo.append(f1_socre_list)
+            ovo.append(f1_score_list)
             ovo.append(roc_auc_score_list)
         else:
-            ovr.append(f1_socre_list)
+            ovr.append(f1_score_list)
             ovr.append(roc_auc_score_list)
     return ovo, ovr
 
@@ -386,8 +515,9 @@ default_ovo, default_ovr = simple_nn_train(MLPClassifier(
 print('Using solver=adam')
 adam_ovo, adam_ovr = simple_nn_train(MLPClassifier(
     solver='adam', warm_start=True, early_stopping=True), iter=iters)
-# 绘制收敛速度的曲线
-# 封装绘制图片的函数
+
+# Plot convergence speed
+# Function to plot the graphs
 
 
 def plot_scores(tag='SGD', iters=iters, data=None, score='f1_score'):
@@ -413,10 +543,10 @@ plt.xlabel('Iterations')
 plt.ylabel('Scores')
 plt.legend()
 plt.savefig('img/abalone_ovo_f1_score.png')
-# 由于ovr表现不稳定没法体现Adam的优势，所以不画图
+# Since ovr performance is unstable, Adam's advantage cannot be shown, so no graph is drawn
 
-# 由于后面需要使用到dropout的技巧，这里就需要调用pytorch里面的神经网络了
-# 先构建一个使用Adam作为优化器并且添加了L2的神经网络
+# Since dropout technique will be used later, we need to call neural networks from PyTorch
+# First, construct a neural network using Adam as the optimizer and adding L2 regularization
 
 
 class SNN(nn.Module):
@@ -436,7 +566,8 @@ class SNN(nn.Module):
         x = self.fc3(x)
         x = self.softmax(x)
         return x
-# 引入Dropout
+
+# Add Dropout
 
 
 class SNNDropout(nn.Module):
@@ -458,7 +589,8 @@ class SNNDropout(nn.Module):
         x = self.fc3(x)
         x = self.softmax(x)
         return x
-# 处理数据
+
+# Process data
 
 
 def data2loader(X, y, batch_size=128, val_pct=0.3):
@@ -476,12 +608,12 @@ def data2loader(X, y, batch_size=128, val_pct=0.3):
 
 train_loader, val_loader = data2loader(X, y)
 
-epoches = 200
+epochs = 200
 device = torch.device('cuda' if torch.cuda.is_available(
 ) else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
 
-def train_eval(model, device, train_loader, val_loader, epoches, lr=0.001, weight_decay=0, verbose=True):
+def train_eval(model, device, train_loader, val_loader, epochs, lr=0.001, weight_decay=0, verbose=True):
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -489,15 +621,15 @@ def train_eval(model, device, train_loader, val_loader, epoches, lr=0.001, weigh
     val_roc_auc_score_list = []
     train_f1_score_list = []
     train_roc_auc_score_list = []
-    finally_f1 = 0
-    finally_roc_auc = 0
-    bar = tqdm(range(epoches), ncols=200)
+    final_f1 = 0
+    final_roc_auc = 0
+    bar = tqdm(range(epochs), ncols=200)
     for epoch in bar:
         model.train()
         train_pred = []
         train_labels = []
         train_prob = []
-        bar.set_description(f'Epoch: {epoch + 1} / {epoches}')
+        bar.set_description(f'Epoch: {epoch + 1} / {epochs}')
         for i, (inputs, labels) in enumerate(train_loader):
             inputs = inputs.to(device, dtype=torch.float32)
             labels = labels.to(device)
@@ -519,6 +651,7 @@ def train_eval(model, device, train_loader, val_loader, epoches, lr=0.001, weigh
         train_roc_auc_score_list.append(train_roc_auc)
         bar.set_postfix({'f1_score': f'{train_f1:.5f}',
                         'roc_auc_score': f'{train_roc_auc:.5f}'})
+
         model.eval()
         correct = 0
         total = 0
@@ -538,48 +671,50 @@ def train_eval(model, device, train_loader, val_loader, epoches, lr=0.001, weigh
                 correct += (predicted == labels).sum().item()
         if epoch % 10 == 0 and verbose:
             print('Epoch:', epoch, 'Accuracy', round(correct / total, 5))
-        finally_f1 = f1_score(val_labels, val_pred, average='micro')
-        finally_roc_auc = roc_auc_score(
+        final_f1 = f1_score(val_labels, val_pred, average='micro')
+        final_roc_auc = roc_auc_score(
             val_labels, val_prob, multi_class='ovr', average='macro')
-        val_f1_score_list.append(finally_f1.copy())
-        val_roc_auc_score_list.append(finally_roc_auc.copy())
-    print(
-        f'Epoch {epoches}: Final Summary on Validation: f1_score {finally_f1:.5f}; roc_auc_score {finally_roc_auc:.5f}')
+        val_f1_score_list.append(final_f1.copy())
+        val_roc_auc_score_list.append(final_roc_auc.copy())
+    print(f'Epoch {epochs}: Final Summary on Validation: f1_score {final_f1:.5f}; roc_auc_score {final_roc_auc:.5f}')
     return [train_f1_score_list, train_roc_auc_score_list], [val_f1_score_list, val_roc_auc_score_list]
 
-# 对比不同的dropout的收敛速度,图片
-def epoch_plot(data, epoches, score, tag):
+# Compare the convergence speed of different dropouts, images
+
+
+def epoch_plot(data, epochs, score, tag):
     if len(data) != len(tag):
-        return 'Error need the same number of data and tag'
+        return 'Error: data and tag must have the same length'
     plt.figure(figsize=(8, 8))
     for i in range(len(data)):
-        plt.plot(range(1, epoches + 1), data[i], label=tag[i])
+        plt.plot(range(1, epochs + 1), data[i], label=tag[i])
     name = ' vs '.join(tag) + '_' + score + '_comparison'
-    plt.title(f'Epoch {epoches} {name}')
+    plt.title(f'Epoch {epochs} {name}')
     plt.legend()
     plt.savefig(f'img/{name}.png')
-    
-default_train, default_val = train_eval(
-        SNN(), device, train_loader, val_loader=val_loader, epoches=epoches, verbose=False)
-dropout_train, dropout_val = train_eval(SNNDropout(
-    dropout=0.5), device, train_loader, val_loader=val_loader, epoches=epoches, verbose=False)
-# 加入l2正则化
-l2_train, l2_val = train_eval(SNN(), device=device, train_loader=train_loader,
-                              val_loader=val_loader, epoches=epoches, weight_decay=0.001, verbose=False)
 
-# 绘制criterion随着epoch的变化曲线
-epoch_plot([default_train[0], default_val[0]], epoches,
+
+default_train, default_val = train_eval(
+    SNN(), device, train_loader, val_loader=val_loader, epochs=epochs, verbose=False)
+dropout_train, dropout_val = train_eval(SNNDropout(
+    dropout=0.5), device, train_loader, val_loader=val_loader, epochs=epochs, verbose=False)
+# Add L2 regularization
+l2_train, l2_val = train_eval(SNN(), device=device, train_loader=train_loader,
+                              val_loader=val_loader, epochs=epochs, weight_decay=0.001, verbose=False)
+
+# Plot criterion changes with epochs
+epoch_plot([default_train[0], default_val[0]], epochs,
            'default f1_score', ['train', 'val'])
-epoch_plot([default_train[1], default_val[1]], epoches,
+epoch_plot([default_train[1], default_val[1]], epochs,
            'default roc_auc_score', ['train', 'val'])
-epoch_plot([dropout_train[0], dropout_val[0]], epoches,
+epoch_plot([dropout_train[0], dropout_val[0]], epochs,
            'dropout f1_score', ['train', 'val'])
-epoch_plot([dropout_train[1], dropout_val[1]], epoches,
+epoch_plot([dropout_train[1], dropout_val[1]], epochs,
            'dropout roc_auc_score', ['train', 'val'])
-epoch_plot([l2_train[0], l2_val[0]], epoches, 'l2 f1_score', ['train', 'val'])
-epoch_plot([l2_train[1], l2_val[1]], epoches,
+epoch_plot([l2_train[0], l2_val[0]], epochs, 'l2 f1_score', ['train', 'val'])
+epoch_plot([l2_train[1], l2_val[1]], epochs,
            'l2 roc_auc_score', ['train', 'val'])
-epoch_plot([default_val[1], dropout_val[1], l2_val[1]], epoches,
+epoch_plot([default_val[1], dropout_val[1], l2_val[1]], epochs,
            'val_roc_auc_score', ['default', 'dropout', 'l2'])
 
 dropouts = [0.4, 0.5, 0.6, 0.7]
@@ -587,77 +722,85 @@ weight_decays = [1e-2, 1e-3, 5e-3, 5e-4]
 for d_rate in dropouts:
     print(f'Dropout: {d_rate}')
     train_eval(SNNDropout(d_rate), device, train_loader,
-               val_loader=val_loader, epoches=epoches, verbose=False)
+               val_loader=val_loader, epochs=epochs, verbose=False)
 for w_decay in weight_decays:
     print(f'Weight decay: {w_decay}')
     train_eval(SNN(), device, train_loader, val_loader=val_loader,
-               epoches=epoches, weight_decay=w_decay, verbose=False)
-# 引入新数据
+               epochs=epochs, weight_decay=w_decay, verbose=False)
+
+# Introduce new data
 print('-' * 50, 'Part B', '-' * 50)
-# choose model
-print('After comparison, We choose RandomForestClassifier and MLPClassifier with Adam solver as the best models')
-# data (as pandas dataframes)
+# Choose model
+print('After comparison, we choose RandomForestClassifier and MLPClassifier with Adam solver as the best models')
+# Load data as pandas DataFrame
 data_B = pd.read_csv('./data/cmc.data', sep=',', header=None, names=[
     'wife_age', 'wife_education', 'husband_education', 'num_children', 'wife_religion', 'wife_work', 'husband_occupation', 'standard_living', 'media_exposure', 'contraceptive_method'])
 X_B = data_B.iloc[:, :-1]
 y_B = data_B.iloc[:, -1]
 
-# 先看看缺失集的问题
-print('The distribution nan value in different features')
+# Check for missing data
+print('The distribution of NaN values across features:')
 print(X_B.isna().sum())
 # Using RandomForestClassifier
 print('#' * 20, 'RandomForestClassifier', '#' * 20)
 sns.pairplot(data_B, hue='contraceptive_method', diag_kind='kde')
 plt.savefig('img/contraceptive_method_pairplot.png')
 corr = data_B.corr()
+plt.figure(figsize=(8, 8))
 sns.heatmap(corr, annot=True, cmap='coolwarm')
 plt.title('Correlation Matrix')
 plt.savefig('img/contraceptive_method_corr.png')
 
 X_train, X_test, y_train, y_test = train_test_split(
     X_B, y_B, test_size=0.2, random_state=42)
-# 初始化随机森林分类器
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42)  # 100棵树
 
-# 训练模型
+# Initialize RandomForestClassifier
+rf_model = RandomForestClassifier(
+    n_estimators=100, random_state=42)  # 100 trees
+
+# Train model
 rf_model.fit(X_train, y_train)
-# 使用测试集进行预测
+# Make predictions on test set
 y_pred = rf_model.predict(X_test)
 
-# 计算评估指标
-# 计算 Accuracy
+# Calculate evaluation metrics
+# Calculate Accuracy
 accuracy = accuracy_score(y_test, y_pred)
-# 计算 F1 Score
-f1 = f1_score(y_test, y_pred, average='weighted')  # 使用 weighted 平均方法适合多分类
-# 计算 ROC-AUC Score
-# 对于多分类，设置 average 参数；如果是二分类，不需要设置 average
+# Calculate F1 Score
+# Weighted average for multi-class
+f1 = f1_score(y_test, y_pred, average='weighted')
+# Calculate ROC-AUC Score
+# For multi-class, set the average parameter; for binary classification, it is not needed
 roc_auc = roc_auc_score(y_test, rf_model.predict_proba(
     X_test), multi_class='ovr', average='weighted')
-# 输出结果
+
+# Print results
 print("Evaluation Metrics:")
 print("Accuracy:", accuracy)
 print("F1 Score (weighted):", f1)
 print("ROC-AUC Score (weighted):", roc_auc)
 
-# 分类报告
+# Classification report
 print("Classification Report:")
 print(classification_report(y_test, y_pred))
-# 混淆矩阵
+# Confusion matrix
 print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 
-# 获取特征重要性
-feature_importances = pd.Series(rf_model.feature_importances_, index=X_B.columns)
+# Get feature importances
+feature_importances = pd.Series(
+    rf_model.feature_importances_, index=X_B.columns)
 
-# 绘制特征重要性图
+# Plot feature importance
 plt.figure(figsize=(10, 6))
 feature_importances.sort_values(ascending=False).plot(kind='bar')
 plt.title('Feature Importances')
 plt.savefig('img/feature_importances.png')
+
 # Using MLPClassifier
 print('#' * 20, 'MLPClassifier', '#' * 20)
 
-# 使用可视化分析每个变量的分布函数
+# Visualize each variable's distribution
 plt.figure(figsize=(18, 18))
 for i, col in enumerate(X_B.columns):
     plt.subplot(3, 3, i + 1)
@@ -665,7 +808,7 @@ for i, col in enumerate(X_B.columns):
 plt.tight_layout()
 plt.savefig('img/contraceptive_method_choice.png')
 
-# 对于target value的不同类别进行统计
+# For target value category statistics
 B_colors = [cmap(i) for i in np.linspace(0, 1, len(y_B.value_counts()))]
 plt.figure(figsize=(8, 8))
 plt.pie(y_B.value_counts(), autopct='%.2f%%', startangle=90, labels=[
@@ -675,13 +818,12 @@ plt.savefig('img/contraceptive_method_choice_pie.png')
 B_ovo, B_ovr = simple_nn_train(MLPClassifier(solver='adam', warm_start=True, early_stopping=True, learning_rate='adaptive',
                                learning_rate_init=0.001, hidden_layer_sizes=(256, 256)), X=X_B, y=y_B, iter=150, only=['ovr'])
 
-
 print('-' * 50, 'Part C', '', '-' * 50)
 
-# 加载数据集
-file_path = './data/processed.cleveland.data'  # Heart Disease 数据集路径
+# Load dataset
+file_path = './data/processed.cleveland.data'  # Heart Disease dataset path
 
-# 添加列名
+# Add column names
 column_names = [
     'age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg',
     'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal', 'target'
@@ -689,15 +831,15 @@ column_names = [
 
 df = pd.read_csv(file_path, names=column_names, header=None, na_values='?')
 
-# 数据预处理 - 检查缺失值并填充
-print(df.isnull().sum())  # 检查缺失值
-df = df.dropna()  # 删除包含缺失值的行
+# Data preprocessing - check for missing values and fill
+print(df.isnull().sum())  # Check for missing values
+df = df.dropna()  # Drop rows with missing values
 
-# 数据分析与可视化
-# 查看数据基本信息
+# Data analysis and visualization
+# View basic information about the data
 # df.info()
 
-# 绘制目标变量的分布
+# Plot the distribution of the target variable
 plt.figure(figsize=(8, 5))
 sns.countplot(x='target', data=df)
 plt.title('Heart Disease Presence (0 = No, 1 = Yes)')
@@ -705,64 +847,66 @@ plt.xlabel('Target')
 plt.ylabel('Count')
 plt.savefig('img/heart_disease_count.png')
 
-# 绘制特征之间的相关性热力图
+# Plot heatmap of feature correlations
 plt.figure(figsize=(12, 10))
 sns.heatmap(df.corr(), annot=True, cmap='viridis')
 plt.title('Correlation Heatmap')
 plt.savefig('img/heart_disease_heatmap.png')
 
-# 模型构建 - 将 'target' 作为目标变量，其他特征作为输入
+# Model construction - use 'target' as the target variable, other features as input
 X = df.drop(columns=['target'])
 y = df['target']
 
-# 将数据集拆分为训练集和测试集
+# Split dataset into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42)
 
-# 训练决策树分类器
+# Train Decision Tree Classifier
 dt_model = DecisionTreeClassifier(random_state=42)
 dt_model.fit(X_train, y_train)
 
-# 评估决策树分类器
+# Evaluate Decision Tree Classifier
 y_pred_dt = dt_model.predict(X_test)
 accuracy_dt = accuracy_score(y_test, y_pred_dt)
 f1_dt = f1_score(y_test, y_pred_dt, average='weighted')
-print(f"决策树 - 准确率: {accuracy_dt:.2f}, F1 分数: {f1_dt:.2f}")
+print(f"Decision Tree - Accuracy: {accuracy_dt:.2f}, F1 Score: {f1_dt:.2f}")
 
-# 训练随机森林分类器
+# Train Random Forest Classifier
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 rf_model.fit(X_train, y_train)
 
-# 评估随机森林分类器
+# Evaluate Random Forest Classifier
 y_pred_rf = rf_model.predict(X_test)
 accuracy_rf = accuracy_score(y_test, y_pred_rf)
 f1_rf = f1_score(y_test, y_pred_rf, average='weighted')
-print(f"随机森林 - 准确率: {accuracy_rf:.2f}, F1 分数: {f1_rf:.2f}")
+print(f"Random Forest - Accuracy: {accuracy_rf:.2f}, F1 Score: {f1_rf:.2f}")
 
-# 训练逻辑回归模型
+# Train Logistic Regression Model
 lr_model = LogisticRegression(max_iter=1000, random_state=42)
 lr_model.fit(X_train, y_train)
 
-# 评估逻辑回归模型
+# Evaluate Logistic Regression Model
 y_pred_lr = lr_model.predict(X_test)
 accuracy_lr = accuracy_score(y_test, y_pred_lr)
 f1_lr = f1_score(y_test, y_pred_lr, average='weighted')
-print(f"逻辑回归 - 准确率: {accuracy_lr:.2f}, F1 分数: {f1_lr:.2f}")
+print(
+    f"Logistic Regression - Accuracy: {accuracy_lr:.2f}, F1 Score: {f1_lr:.2f}")
 
-# 比较模型表现
-print("\n模型表现对比:")
-print(f"决策树 - 准确率: {accuracy_dt:.2f}, F1 分数: {f1_dt:.2f}")
-print(f"随机森林 - 准确率: {accuracy_rf:.2f}, F1 分数: {f1_rf:.2f}")
-print(f"逻辑回归 - 准确率: {accuracy_lr:.2f}, F1 分数: {f1_lr:.2f}")
+# Compare model performance
+print("\nModel Performance Comparison:")
+print(f"Decision Tree - Accuracy: {accuracy_dt:.2f}, F1 Score: {f1_dt:.2f}")
+print(f"Random Forest - Accuracy: {accuracy_rf:.2f}, F1 Score: {f1_rf:.2f}")
+print(
+    f"Logistic Regression - Accuracy: {accuracy_lr:.2f}, F1 Score: {f1_lr:.2f}")
 
-# 可视化模型表现
+# Visualize model performance
 models = ['Decision Tree', 'Random Forest', 'Logistic Regression']
 accuracies = [accuracy_dt, accuracy_rf, accuracy_lr]
 f1_scores = [f1_dt, f1_rf, f1_lr]
 
 plt.figure(figsize=(10, 6))
 
-# 绘制准确率条形图
+# Plot accuracy bar chart
 plt.subplot(1, 2, 1)
 plt.bar(models, accuracies, color=['blue', 'green', 'red'])
 plt.title('Model Accuracy Comparison')
@@ -770,7 +914,7 @@ plt.xlabel('Models')
 plt.ylabel('Accuracy')
 plt.ylim(0, 1)
 
-# 绘制 F1 分数条形图
+# Plot F1 score bar chart
 plt.subplot(1, 2, 2)
 plt.bar(models, f1_scores, color=['blue', 'green', 'red'])
 plt.title('Model F1 Score Comparison')

@@ -8,10 +8,9 @@ Assn2.ipynb is the Jupyter notebook of Assignment 2
 [Ass3](./ass3/) contains all the data and py file needed for Assignment 3
 
 use` cd ass3` to enter the directory and executed `python model.py` to run all the models.
-
+The output of ass3 is written in `output.txt`
 The structure of this repository:
-
-```bash
+```baah
 .
 ├── README.md
 ├── ass3
@@ -32,6 +31,7 @@ The structure of this repository:
 │   │   ├── alpha_impurity.png
 │   │   ├── contraceptive_method_choice.png
 │   │   ├── contraceptive_method_choice_pie.png
+│   │   ├── contraceptive_method_corr.png
 │   │   ├── contraceptive_method_pairplot.png
 │   │   ├── decision_tree.png
 │   │   ├── default vs dropout vs l2_val_roc_auc_score_comparison.png
@@ -48,6 +48,7 @@ The structure of this repository:
 │   │   ├── train vs val_l2 f1_score_comparison.png
 │   │   └── train vs val_l2 roc_auc_score_comparison.png
 │   ├── model.py
+│   ├── output.txt
 │   └── partc.py
 ├── assn2
 │   ├── assn2.ipynb
@@ -62,6 +63,3 @@ The structure of this repository:
         ├── cmc.data
         └── cmc.names
 ```
-
-
-
